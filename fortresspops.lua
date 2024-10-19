@@ -71,7 +71,7 @@ end
 local field_functions = {
     {name = column.ID, func = function(unit) return unit.id end},
     {name = column.Name, func = function(unit) return dfhack.TranslateName(unit.name) end},
-    {name = column.Age, func = function(unit) return dfhack.units.getAge(unit) end},  -- Age as a number
+    {name = column.Age, func = function(unit) return dfhack.units.getAge(unit) end},
     {name = column.Gender, func = function(unit) return unit.sex == 1 and 'Male' or 'Female' end},
     {name = column.Profession, func = function(unit) return df.profession[unit.profession] or "Unknown" end},
     {name = column.Skills, func = function(unit) 
@@ -159,7 +159,7 @@ function WatchList:init()
         subviews = {
             widgets.Panel{
                 view_id = 'list_panel',
-                frame = {t = 2, l = 0, r = 0, b = 8},
+                frame = {t = 2, l = 0, r = 0, b = 8, h = 50},
                 frame_style = gui.FRAME_INTERIOR,
                 subviews = {
                     widgets.Label{
@@ -307,12 +307,14 @@ function WatchList:refresh()
 
     -- Rebuild choices for the UI
     local choices = {}
-    for _, unit_data in ipairs(unit_table) do
+    for _, unit_row in ipairs(unit_table) do
         local entry = {}
-        for i, data in ipairs(unit_data) do
+        for i, column_data in ipairs(unit_row) do
             local column_name = field_functions[i].name
             local width = column_width[column_name] or 10
-            table.insert(entry, {text = data, width = width, rjustify = false, pad_char = ' ', pen=COLOR_WHITE})
+            local color = COLOR_WHITE
+
+            table.insert(entry, {text = column_data, width = width, rjustify = false, pad_char = ' ', pen=color})
         end
         table.insert(choices, {text = entry})
     end
