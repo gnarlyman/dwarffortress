@@ -1,0 +1,328 @@
+local dlg = require('gui.dialogs')
+local gui = require('gui')
+local plugin = require('plugins.autobutcher')
+local widgets = require('gui.widgets')
+
+local units = df.global.world.units.active
+
+local column = {
+    ID = "ID",
+    Name = "Name",
+    Age = "Age",
+    Gender = "Gender",
+    Profession = "Profession",
+    Skills = "Skills",
+    Squad = "Squad",
+    Race = "Race",
+    Type = "Type",
+    Stress = "Stress",
+}
+
+local column_width = {
+    ID = 5,
+    Name = 20,
+    Age = 8,
+    Gender = 8,
+    Profession = 15,
+    Skills = 30,
+    Squad = 15,
+    Race = 10,
+    Type = 10,
+    Stress = 10,
+}
+
+local header_position = {
+    ID = 0,
+    Name = 5,
+    Age = 25,
+    Gender = 33,
+    Profession = 41,
+    Skills = 56,
+    Squad = 86,
+    Race = 101,
+    Type = 111,
+    Stress = 121,
+}
+
+local current_sort_column = column.ID  -- Default sort column
+local ascending_sort = false  -- Default to descending sort
+
+local function updateHeaderWidgets(self)
+    -- Reset all header labels
+    for _, field in ipairs(field_functions) do
+        local column_name = field.name
+        local header_widget = self.subviews["sort_" .. column_name:lower()]
+
+        if header_widget then
+            header_widget:setText(column_name)
+        end
+    end
+
+    -- Update the currently sorted column with up/down arrow
+    local sort_arrow = ascending_sort and CH_UP or CH_DN
+    local current_header_widget = self.subviews["sort_" .. current_sort_column:lower()]
+
+    if current_header_widget then
+        current_header_widget:setText(current_sort_column .. sort_arrow)
+    end
+end
+
+-- Table holding the field names and corresponding functions to retrieve the values
+local field_functions = {
+    {name = column.ID, func = function(unit) return unit.id end},
+    {name = column.Name, func = function(unit) return dfhack.TranslateName(unit.name) end},
+    {name = column.Age, func = function(unit) return dfhack.units.getAge(unit) end},  -- Age as a number
+    {name = column.Gender, func = function(unit) return unit.sex == 1 and 'Male' or 'Female' end},
+    {name = column.Profession, func = function(unit) return df.profession[unit.profession] or "Unknown" end},
+    {name = column.Skills, func = function(unit) 
+        local skills = {}
+        for _, skill in ipairs(unit.status.current_soul.skills) do
+            local skill_name = df.job_skill[skill.id]
+            local skill_level = skill.rating
+            if skill_level >= 1 then
+                table.insert(skills, skill_name .. '(' .. skill_level .. ')')
+            end
+        end
+        return table.concat(skills, ' ')
+    end},
+    {name = column.Squad, func = function(unit)
+        if unit.military.squad_id ~= -1 then
+            local squad = df.squad.find(unit.military.squad_id)
+            if squad then
+                return dfhack.TranslateName(squad.name)
+            end
+        end
+        return "No squad"
+    end},
+    {name = column.Race, func = function(unit) return dfhack.units.getRaceName(unit) end},
+    {name = column.Type, func = function(unit)
+        return dfhack.units.isCitizen(unit) and 'CITIZEN' or 'RESIDENT'
+    end},
+    {name = column.Stress, func = function(unit) return dfhack.units.getStressCategory(unit) end}
+}
+
+local function unit_row(unit)
+    local row = {}
+    for _, field in ipairs(field_functions) do
+        local value = field.func(unit)
+        table.insert(row, value)
+    end
+    return row
+end
+
+local function build_unit_table()
+    local rows = {}
+    for _, unit in ipairs(units) do
+        if dfhack.units.isCitizen(unit) or dfhack.units.isResident(unit) then
+            table.insert(rows, unit_row(unit))
+        end
+    end
+    return rows
+end
+
+local CH_UP = string.char(30)
+local CH_DN = string.char(31)
+
+WatchList = defclass(WatchList, gui.ZScreen)
+WatchList.ATTRS{
+    focus_string='fortresspops',
+}
+
+local function sortTableByField(data, field_idx, ascending)
+    table.sort(data, function(a, b)
+        local valA = a[field_idx]
+        local valB = b[field_idx]
+
+        if valA == valB then
+            return false
+        end
+        
+        -- Compare values and apply ascending/descending order
+        if ascending then
+            return valA < valB
+        else
+            return valA > valB
+        end
+    end)
+end
+
+
+function WatchList:init()
+    if plugin.isEnabled() then
+        dfhack.run_command('autobutcher', 'now')
+    end
+
+    local window = widgets.Window{
+        frame_title = 'Fortress Pops',
+        frame = {w = 140, h = 50},
+        resizable = true,
+        subviews = {
+            widgets.Panel{
+                view_id = 'list_panel',
+                frame = {t = 2, l = 0, r = 0, b = 8},
+                frame_style = gui.FRAME_INTERIOR,
+                subviews = {
+                    widgets.Label{
+                        view_id = 'sort_id',
+                        frame = {t = 0, l = header_position.ID, w = column_width.ID},
+                        text = column.ID,
+                        on_click = self:callback('sortByColumn', column.ID)
+                    },
+                    widgets.Label{
+                        view_id = 'sort_name',
+                        frame = {t = 0, l = header_position.Name, w = column_width.Name},
+                        text = column.Name,
+                        on_click = self:callback('sortByColumn', column.Name)
+                    },
+                    widgets.Label{
+                        view_id = 'sort_age',
+                        frame = {t = 0, l = header_position.Age, w = column_width.Age},
+                        text = column.Age,
+                        on_click = self:callback('sortByColumn', column.Age)
+                    },
+                    widgets.Label{
+                        view_id = 'sort_gender',
+                        frame = {t = 0, l = header_position.Gender, w = column_width.Gender},
+                        text = column.Gender,
+                        on_click = self:callback('sortByColumn', column.Gender)
+                    },
+                    widgets.Label{
+                        view_id = 'sort_profession',
+                        frame = {t = 0, l = header_position.Profession, w = column_width.Profession},
+                        text = column.Profession,
+                        on_click = self:callback('sortByColumn', column.Profession)
+                    },
+                    widgets.Label{
+                        frame={t=0, l=header_position.Skills, w = column_width.Skills},
+                        text=column.Skills
+                    },
+                    widgets.Label{
+                        view_id = 'sort_squad',
+                        frame = {t = 0, l = header_position.Squad, w = column_width.Squad},
+                        text = column.Squad,
+                        on_click = self:callback('sortByColumn', column.Squad)
+                    },
+                    widgets.Label{
+                        view_id = 'sort_race',
+                        frame = {t = 0, l = header_position.Race, w = column_width.Race},
+                        text = column.Race,
+                        on_click = self:callback('sortByColumn', column.Race)
+                    },
+                    widgets.Label{
+                        view_id = 'sort_type',
+                        frame = {t = 0, l = header_position.Type, w = column_width.Type},
+                        text = column.Type,
+                        on_click = self:callback('sortByColumn', column.Type)
+                    },
+                    widgets.Label{
+                        view_id = 'sort_stress',
+                        frame = {t = 0, l = header_position.Stress, w = column_width.Stress},
+                        text = column.Stress,
+                        on_click = self:callback('sortByColumn', column.Stress)
+                    },
+                    widgets.List{
+                        view_id = 'list',
+                        frame = {t = 3, b = 0},
+                    },
+                }
+            },
+        }
+    }
+
+    self:addviews{window}
+    self:sortByColumn("ID", false)  -- Default sort on init
+end
+
+function WatchList:sortByColumn(column_name)
+    -- Toggle ascending/descending if the same column is selected
+    if current_sort_column == column_name then
+        ascending_sort = not ascending_sort
+    else
+        -- If a new column is selected, reset to descending order
+        current_sort_column = column_name
+        ascending_sort = false
+    end
+
+    -- Sort the data based on the selected column
+    self:refresh()
+end
+
+function WatchList:updateHeaderWidgets()
+    -- Reset all header labels
+    for _, field in ipairs(field_functions) do
+        local column_name = field.name
+        local header_widget = self.subviews["sort_" .. column_name:lower()]
+
+        if header_widget then
+            header_widget:setText(column_name)
+        end
+    end
+
+    -- Update the currently sorted column with up/down arrow
+    local sort_arrow = ascending_sort and CH_UP or CH_DN
+    local current_header_widget = self.subviews["sort_" .. current_sort_column:lower()]
+
+    if current_header_widget then
+        current_header_widget:setText(current_sort_column .. sort_arrow)
+    end
+end
+
+function WatchList:onRenderFrame(dc, rect)
+    WatchList.super.onRenderFrame(self, dc, rect)
+end
+
+-- Custom sort function
+function sortKeys(a, b, column)
+    -- Use the column index to compare values in that column
+    local valA = a[column]
+    local valB = b[column]
+
+    -- Sort logic: compare the values in the column
+    if valA == valB then
+        return false  -- They are equal, don't change order
+    else
+        return valA < valB  -- Sort in ascending order (can reverse if needed)
+    end
+end
+
+function WatchList:refresh()
+    -- Build and sort the unit table
+    local unit_table = build_unit_table()
+    local field_idx = nil
+
+    -- Find the index of the currently sorted column
+    for i, field in ipairs(field_functions) do
+        if field.name == current_sort_column then
+            field_idx = i
+            break
+        end
+    end
+
+    if field_idx then
+        sortTableByField(unit_table, field_idx, ascending_sort)
+    end
+
+    -- Update the header widgets to show the current sort state
+    self:updateHeaderWidgets()
+
+    -- Rebuild choices for the UI
+    local choices = {}
+    for _, unit_data in ipairs(unit_table) do
+        local entry = {}
+        for i, data in ipairs(unit_data) do
+            local column_name = field_functions[i].name
+            local width = column_width[column_name] or 10
+            table.insert(entry, {text = data, width = width, rjustify = false, pad_char = ' ', pen=COLOR_WHITE})
+        end
+        table.insert(choices, {text = entry})
+    end
+
+    -- Update the list view with sorted choices
+    self.subviews.list:setChoices(choices)
+end
+
+function WatchList:onDismiss()
+    view = nil
+end
+
+view = view and view:raise() or WatchList{}:show()
