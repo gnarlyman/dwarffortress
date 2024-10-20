@@ -314,6 +314,12 @@ function WatchList:refresh()
             local width = column_width[column_name] or 10
             local color = COLOR_WHITE
 
+            if column_name == "Age" then
+                column_data = string.format("%.2f", column_data)
+            elseif column_name == "Stress" then
+                color = getStressColor(column_data)
+            end
+
             table.insert(entry, {text = column_data, width = width, rjustify = false, pad_char = ' ', pen=color})
         end
         table.insert(choices, {text = entry})
@@ -321,6 +327,26 @@ function WatchList:refresh()
 
     -- Update the list view with sorted choices
     self.subviews.list:setChoices(choices)
+end
+
+function getStressColor(value)
+    if value == 6 then
+        return COLOR_LIGHTGREEN
+    elseif value == 5 then
+        return COLOR_GREEN 
+    elseif value == 4 then
+        return COLOR_YELLOW
+    elseif value == 3 then
+        return COLOR_BLUE 
+    elseif value == 2 then
+        return COLOR_MAGENTA
+    elseif value == 1 then
+        return COLOR_LIGHTMAGENTA
+    elseif value == 0 then
+        return COLOR_RED 
+    else
+        return COLOR_WHITE
+    end
 end
 
 function WatchList:onDismiss()
