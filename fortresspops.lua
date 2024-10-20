@@ -171,12 +171,18 @@ end
 function WatchList:init()
     local window = widgets.Window{
         frame_title = 'Fortress Pops',
-        frame = {w = 140, h = 50},
+        frame = {w = 128, h = 50},
         resizable = true,
         subviews = {
+            widgets.ToggleHotkeyLabel{
+                view_id='show_residents',
+                frame={t=0, l=0, w=26},
+                label='Show Residents',
+                on_change=self:callback('refresh', 'show_residents'),
+            },
             widgets.Panel{
                 view_id = 'list_panel',
-                frame = {t = 2, l = 0, r = 0, b = 8, h = 50},
+                frame = {t=2, l=0, r=0, b=2},
                 frame_style = gui.FRAME_INTERIOR,
                 subviews = {
                     widgets.Label{
@@ -333,11 +339,11 @@ function WatchList:refresh()
             local width = column_width[column_name] or 10
             local color = COLOR_WHITE
 
-            if column_name == "Age" then
+            if column_name == column.Age then
                 column_data = string.format("%.2f", column_data)
-            elseif column_name == "Stress" then
+            elseif column_name == column.Stress then
                 color = getStressColor(column_data)
-            elseif column_name == "Skills" then
+            elseif column_name == column.Skills then
                 -- Split skills by spaces and store them in skill_list
                 for skill in column_data:gmatch("%S+") do
                     table.insert(skill_list, skill)
