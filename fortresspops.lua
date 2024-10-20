@@ -334,7 +334,7 @@ function WatchList:refresh()
                 color = getStressColor(column_data)
             end
 
-            table.insert(entry, {text = column_data, width = width, rjustify = false, pad_char = ' ', pen=color})
+            table.insert(entry, {text = column_data, width = width, pen=color})
         end
         table.insert(choices, {text = entry})
     end
