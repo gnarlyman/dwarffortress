@@ -50,6 +50,7 @@ local filters = {
     show_residents = true,
     show_all_skills = false,
     show_squads = false,
+    search = '',
 }
 
 local function updateHeaderWidgets(self)
@@ -178,6 +179,12 @@ function WatchList:update_filter(filter_name)
     self:refresh()
 end
 
+
+function WatchList:search(text, old)
+    filters.search = text
+    self:refresh()
+end
+
 function WatchList:init()
     local window = widgets.Window{
         frame_title = 'Fortress Pops',
@@ -281,8 +288,7 @@ function WatchList:init()
                         frame={l=1, t=2, r=1},
                         label_text="Search: ",
                         key='CUSTOM_ALT_S',
-                        text='',
-                        on_change=function(text) end,
+                        on_change=function(text, old) self:search(text, old) end,
                     },
                     widgets.List{
                         view_id = 'list',
@@ -375,6 +381,8 @@ function WatchList:refresh()
         local entry = {}
         local skill_list = {}
 
+        local row_text = ""
+
         for i, column_data in ipairs(unit_row) do
             local column_name = field_functions[i].name
             local width = column_width[column_name] or 10
@@ -409,11 +417,14 @@ function WatchList:refresh()
                 end
             end
 
+            -- Add the column data to the row text (for searching purposes)
+            row_text = row_text .. tostring(column_data):lower() .. " "
+
             table.insert(entry, {text = column_data, width = width, pen=color})
         end
 
-        -- Insert the main unit entry (first row)
-        table.insert(choices, {text = entry})
+        -- Add main unit entry to the choices
+        local unit_chunk = {entry}
 
         if filters.show_all_skills then
             -- Add additional rows for remaining skills, applying the length check
@@ -442,10 +453,22 @@ function WatchList:refresh()
                     end
                 end
 
-                -- Insert the additional row into the choices
-                table.insert(choices, {text = additional_row})
+                -- Add additional row to the unit chunk
+                table.insert(unit_chunk, additional_row)
             end
         end
+
+        -- If the row text contains the search query, add the unit chunk to choices
+        if filters.search ~= "" then
+            if row_text:find(filters.search) then
+                for _, row in ipairs(unit_chunk) do
+                    table.insert(choices, {text = row})
+                end
+            end
+        else
+            table.insert(choices, unit_chunk)
+        end
+
         ::continue::
     end
 
