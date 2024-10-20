@@ -50,6 +50,7 @@ local filters = {
     show_residents = true,
     show_all_skills = false,
     show_squads = false,
+    hide_children = false,
     search = '',
 }
 
@@ -211,10 +212,21 @@ function WatchList:init()
             },
             widgets.ToggleHotkeyLabel{
                 view_id='show_squads',
-                frame={t=0, l=56, w=26},
+                frame={t=0, l=58, w=26},
                 label='Show Squads',
                 key='CUSTOM_ALT_Q',
                 on_change=self:callback('update_filter', 'show_squads'),
+                options={
+                    {value=false, label='Off'},
+                    {value=true, label='On', pen=COLOR_GREEN},
+                },
+            },
+            widgets.ToggleHotkeyLabel{
+                view_id='hide_children',
+                frame={t=0, l=84, w=26},
+                label='Hide Children',
+                key='CUSTOM_ALT_C',
+                on_change=self:callback('update_filter', 'hide_children'),
                 options={
                     {value=false, label='Off'},
                     {value=true, label='On', pen=COLOR_GREEN},
@@ -408,6 +420,10 @@ function WatchList:refresh()
                 color = getSquadColor(column_data)
             elseif column_name == column.Race then
                 color = getRaceColor(column_data)
+            elseif column_name == column.Profession then
+                if filters.hide_children and column_data == "CHILD" then
+                    goto continue
+                end
             elseif column_name == column.Skills then
                 -- Split skills by spaces and store them in skill_list
                 for skill in column_data:gmatch("%S+") do
