@@ -390,6 +390,8 @@ function WatchList:refresh()
 
             if column_name == column.Age then
                 column_data = string.format("%.2f", column_data)
+            elseif column_name == column.Gender then
+                color = getGenderColor(column_data)
             elseif column_name == column.Stress then
                 color = getStressColor(column_data)
             elseif column_name == column.Type then
@@ -403,6 +405,9 @@ function WatchList:refresh()
                         goto continue
                     end
                 end
+                color = getSquadColor(column_data)
+            elseif column_name == column.Race then
+                color = getRaceColor(column_data)
             elseif column_name == column.Skills then
                 -- Split skills by spaces and store them in skill_list
                 for skill in column_data:gmatch("%S+") do
@@ -470,6 +475,30 @@ function WatchList:refresh()
 
     -- Update the list view with sorted choices
     self.subviews.list:setChoices(choices)
+end
+
+function getGenderColor(value)
+    if value == 'Male' then
+        return COLOR_BLUE
+    else
+        return COLOR_LIGHTMAGENTA
+    end
+end
+
+function getSquadColor(value)
+    if value == 'No squad' then
+        return COLOR_WHITE
+    else
+        return COLOR_MAGENTA
+    end
+end
+
+function getRaceColor(value)
+    if value == 'DWARF' then
+        return COLOR_LIGHTGREEN
+    else
+        return COLOR_YELLOW
+    end
 end
 
 function getTypeColor(value)
