@@ -46,6 +46,11 @@ header_position["Stress"] = header_position["Type"] + column_width.Type
 local current_sort_column = column.ID  -- Default sort column
 local ascending_sort = false  -- Default to descending sort
 
+local filters = {
+    show_residents = true,
+    show_all_skills = false,
+}
+
 local function updateHeaderWidgets(self)
     -- Reset all header labels
     for _, field in ipairs(field_functions) do
@@ -167,6 +172,10 @@ local function sortTableByField(data, field_idx, ascending)
     end)
 end
 
+function WatchList:update_filter(filter_name)
+    filters[filter_name] = not filters[filter_name]
+    self:refresh()
+end
 
 function WatchList:init()
     local window = widgets.Window{
@@ -178,7 +187,7 @@ function WatchList:init()
                 view_id='show_residents',
                 frame={t=0, l=0, w=26},
                 label='Show Residents',
-                on_change=self:callback('refresh', 'show_residents'),
+                on_change=self:callback('update_filter', 'show_residents'),
             },
             widgets.Panel{
                 view_id = 'list_panel',
@@ -343,6 +352,10 @@ function WatchList:refresh()
                 column_data = string.format("%.2f", column_data)
             elseif column_name == column.Stress then
                 color = getStressColor(column_data)
+            elseif column_name == column.Type then
+                if not filters.show_residents and column_data == 'RESIDENT' then
+                    goto continue
+                end
             elseif column_name == column.Skills then
                 -- Split skills by spaces and store them in skill_list
                 for skill in column_data:gmatch("%S+") do
@@ -359,6 +372,7 @@ function WatchList:refresh()
             end
 
             table.insert(entry, {text = column_data, width = width, pen=color})
+            ::continue::
         end
 
         -- Insert the main unit entry (first row)
