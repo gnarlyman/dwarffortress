@@ -49,6 +49,7 @@ local ascending_sort = false  -- Default to descending sort
 local filters = {
     show_residents = true,
     show_all_skills = false,
+    show_squads = false,
 }
 
 local function updateHeaderWidgets(self)
@@ -188,6 +189,26 @@ function WatchList:init()
                 frame={t=0, l=0, w=26},
                 label='Show Residents',
                 on_change=self:callback('update_filter', 'show_residents'),
+            },
+            widgets.ToggleHotkeyLabel{
+                view_id='show_all_skills',
+                frame={t=0, l=28, w=26},
+                label='Show All Skills',
+                on_change=self:callback('update_filter', 'show_all_skills'),
+                options={
+                    {value=false, label='Off'},
+                    {value=true, label='On', pen=COLOR_GREEN},
+                },
+            },
+            widgets.ToggleHotkeyLabel{
+                view_id='show_squads',
+                frame={t=0, l=56, w=26},
+                label='Show Squads',
+                on_change=self:callback('update_filter', 'show_squads'),
+                options={
+                    {value=false, label='Off'},
+                    {value=true, label='On', pen=COLOR_GREEN},
+                },
             },
             widgets.Panel{
                 view_id = 'list_panel',
@@ -356,6 +377,12 @@ function WatchList:refresh()
                 if not filters.show_residents and column_data == 'RESIDENT' then
                     goto continue
                 end
+            elseif column_name == column.Squad then
+                if filters.show_squads then
+                    if column_data == "No squad" then
+                        goto continue
+                    end
+                end
             elseif column_name == column.Skills then
                 -- Split skills by spaces and store them in skill_list
                 for skill in column_data:gmatch("%S+") do
@@ -372,41 +399,43 @@ function WatchList:refresh()
             end
 
             table.insert(entry, {text = column_data, width = width, pen=color})
-            ::continue::
         end
 
         -- Insert the main unit entry (first row)
         table.insert(choices, {text = entry})
 
-        -- Add additional rows for remaining skills, applying the length check
-        while #skill_list > 0 do
-            local additional_row = {}
-            local skill_data = popAtIndex(skill_list, 1) or ""
+        if filters.show_all_skills then
+            -- Add additional rows for remaining skills, applying the length check
+            while #skill_list > 0 do
+                local additional_row = {}
+                local skill_data = popAtIndex(skill_list, 1) or ""
 
-            -- Check if we can fit two skills in the row based on the length
-            if #skill_list > 0 then
-                local next_skill = skill_list[1]  -- Peek at the next skill
-                if (#skill_data + #next_skill + 1) <= SKILL_THRESHOLD then
-                    -- Add the next skill if combined length is within the threshold
-                    skill_data = ("%s %s"):format(skill_data, popAtIndex(skill_list, 1))
+                -- Check if we can fit two skills in the row based on the length
+                if #skill_list > 0 then
+                    local next_skill = skill_list[1]  -- Peek at the next skill
+                    if (#skill_data + #next_skill + 1) <= SKILL_THRESHOLD then
+                        -- Add the next skill if combined length is within the threshold
+                        skill_data = ("%s %s"):format(skill_data, popAtIndex(skill_list, 1))
+                    end
                 end
-            end
 
-            -- Add empty text for all columns except the "Skills" column
-            for j = 1, #field_functions do
-                local column_name = field_functions[j].name
-                local width = column_width[column_name] or 10
-                if column_name == "Skills" then
-                    table.insert(additional_row, {text = skill_data, width = width, pen=COLOR_WHITE})
-                else
-                    -- Insert empty text for non-skills columns
-                    table.insert(additional_row, {text = "", width = width, pen=COLOR_WHITE})
+                -- Add empty text for all columns except the "Skills" column
+                for j = 1, #field_functions do
+                    local column_name = field_functions[j].name
+                    local width = column_width[column_name] or 10
+                    if column_name == "Skills" then
+                        table.insert(additional_row, {text = skill_data, width = width, pen=COLOR_WHITE})
+                    else
+                        -- Insert empty text for non-skills columns
+                        table.insert(additional_row, {text = "", width = width, pen=COLOR_WHITE})
+                    end
                 end
-            end
 
-            -- Insert the additional row into the choices
-            table.insert(choices, {text = additional_row})
+                -- Insert the additional row into the choices
+                table.insert(choices, {text = additional_row})
+            end
         end
+        ::continue::
     end
 
     -- Update the list view with sorted choices
