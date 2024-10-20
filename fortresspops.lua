@@ -162,10 +162,6 @@ end
 
 
 function WatchList:init()
-    if plugin.isEnabled() then
-        dfhack.run_command('autobutcher', 'now')
-    end
-
     local window = widgets.Window{
         frame_title = 'Fortress Pops',
         frame = {w = 140, h = 50},
