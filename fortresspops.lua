@@ -423,8 +423,13 @@ function WatchList:refresh()
             table.insert(entry, {text = column_data, width = width, pen=color})
         end
 
+        -- Apply search filter **before** adding any rows
+        if filters.search ~= "" and not row_text:find(filters.search) then
+            -- Skip this unit entirely if the search doesn't match
+            goto continue
+        end
+
         -- Add main unit entry to the choices
-        -- Only add this once outside any condition
         table.insert(choices, {entry})
 
         -- Handle additional skills if they exist
@@ -457,13 +462,6 @@ function WatchList:refresh()
                 -- Add additional row to the choices
                 table.insert(choices, {additional_row})
             end
-        end
-        
-        -- Only add unit rows to the choices if they match the search filter
-        -- The main entry has already been added above, so we only filter now
-        if filters.search ~= "" and not row_text:find(filters.search) then
-            -- Remove the previously inserted main row if it doesn't match the search
-            table.remove(choices)
         end
 
         ::continue::
