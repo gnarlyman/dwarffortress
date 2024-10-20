@@ -380,9 +380,9 @@ function WatchList:refresh()
         -- Create the main entry for the unit
         local entry = {}
         local skill_list = {}
-
         local row_text = ""
 
+        -- Build the main row for the unit
         for i, column_data in ipairs(unit_row) do
             local column_name = field_functions[i].name
             local width = column_width[column_name] or 10
@@ -410,22 +410,24 @@ function WatchList:refresh()
                 -- Apply length check for the main row (up to two skills)
                 column_data = popAtIndex(skill_list, 1) or ""
                 if #skill_list > 0 then
-                    local next_skill = skill_list[1]  -- Peek at the next skill
+                    local next_skill = skill_list[1]
                     if (#column_data + #next_skill + 1) <= SKILL_THRESHOLD then
                         column_data = ("%s %s"):format(column_data, popAtIndex(skill_list, 1))
                     end
                 end
             end
 
-            -- Add the column data to the row text (for searching purposes)
+            -- Add the column data to the row text for searching purposes
             row_text = row_text .. tostring(column_data):lower() .. " "
 
             table.insert(entry, {text = column_data, width = width, pen=color})
         end
 
         -- Add main unit entry to the choices
-        local unit_chunk = {entry}
+        -- Only add this once outside any condition
+        table.insert(choices, {entry})
 
+        -- Handle additional skills if they exist
         if filters.show_all_skills then
             -- Add additional rows for remaining skills, applying the length check
             while #skill_list > 0 do
@@ -434,9 +436,8 @@ function WatchList:refresh()
 
                 -- Check if we can fit two skills in the row based on the length
                 if #skill_list > 0 then
-                    local next_skill = skill_list[1]  -- Peek at the next skill
+                    local next_skill = skill_list[1]
                     if (#skill_data + #next_skill + 1) <= SKILL_THRESHOLD then
-                        -- Add the next skill if combined length is within the threshold
                         skill_data = ("%s %s"):format(skill_data, popAtIndex(skill_list, 1))
                     end
                 end
@@ -453,20 +454,16 @@ function WatchList:refresh()
                     end
                 end
 
-                -- Add additional row to the unit chunk
-                table.insert(unit_chunk, additional_row)
+                -- Add additional row to the choices
+                table.insert(choices, {additional_row})
             end
         end
-
-        -- If the row text contains the search query, add the unit chunk to choices
-        if filters.search ~= "" then
-            if row_text:find(filters.search) then
-                for _, row in ipairs(unit_chunk) do
-                    table.insert(choices, {text = row})
-                end
-            end
-        else
-            table.insert(choices, unit_chunk)
+        
+        -- Only add unit rows to the choices if they match the search filter
+        -- The main entry has already been added above, so we only filter now
+        if filters.search ~= "" and not row_text:find(filters.search) then
+            -- Remove the previously inserted main row if it doesn't match the search
+            table.remove(choices)
         end
 
         ::continue::
