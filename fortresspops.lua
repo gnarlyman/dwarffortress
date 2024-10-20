@@ -188,12 +188,14 @@ function WatchList:init()
                 view_id='show_residents',
                 frame={t=0, l=0, w=26},
                 label='Show Residents',
+                key='CUSTOM_ALT_R',
                 on_change=self:callback('update_filter', 'show_residents'),
             },
             widgets.ToggleHotkeyLabel{
                 view_id='show_all_skills',
                 frame={t=0, l=28, w=26},
                 label='Show All Skills',
+                key='CUSTOM_ALT_K',
                 on_change=self:callback('update_filter', 'show_all_skills'),
                 options={
                     {value=false, label='Off'},
@@ -204,6 +206,7 @@ function WatchList:init()
                 view_id='show_squads',
                 frame={t=0, l=56, w=26},
                 label='Show Squads',
+                key='CUSTOM_ALT_Q',
                 on_change=self:callback('update_filter', 'show_squads'),
                 options={
                     {value=false, label='Off'},
@@ -273,9 +276,17 @@ function WatchList:init()
                         text = column.Stress,
                         on_click = self:callback('sortByColumn', column.Stress)
                     },
-                    widgets.FilteredList{
+                    widgets.EditField{
+                        view_id='search',
+                        frame={l=1, t=2, r=1},
+                        label_text="Search: ",
+                        key='CUSTOM_ALT_S',
+                        text='',
+                        on_change=function(text) end,
+                    },
+                    widgets.List{
                         view_id = 'list',
-                        frame = {t = 2, b = 0},
+                        frame = {t = 4, b = 0},
                         row_height=2,
                     },
                 }
