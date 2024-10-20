@@ -277,10 +277,6 @@ function WatchList:updateHeaderWidgets()
     end
 end
 
-function WatchList:onRenderFrame(dc, rect)
-    WatchList.super.onRenderFrame(self, dc, rect)
-end
-
 -- Custom sort function
 function sortKeys(a, b, column)
     -- Use the column index to compare values in that column
