@@ -445,13 +445,10 @@ function WatchList:refresh()
             table.insert(entry, {text = column_data, width = width, pen=color})
         end
 
-        -- Apply search filter **before** adding any rows
-        if filters.search ~= "" and not row_text:find(filters.search) then
-            -- Skip this unit entirely if the search doesn't match
-            goto continue
-        end
+        -- Store the original row text for searching, including the main skills
+        local original_row_text = row_text
 
-        -- Add main unit entry to the choices
+        -- Add main unit entry to the choices unconditionally
         table.insert(choices, {entry})
 
         -- Handle additional skills if they exist
@@ -475,15 +472,25 @@ function WatchList:refresh()
                     local width = column_width[column_name] or 10
                     if column_name == "Skills" then
                         table.insert(additional_row, {text = skill_data, width = width, pen=COLOR_WHITE})
+                        -- Concatenate the additional skill data into the original row text for searching
+                        original_row_text = original_row_text .. skill_data:lower() .. " "
                     else
                         -- Insert empty text for non-skills columns
                         table.insert(additional_row, {text = "", width = width, pen=COLOR_WHITE})
                     end
                 end
 
-                -- Add additional row to the choices
-                table.insert(choices, {additional_row})
+                -- Add additional row to the choices, but check for the search filter
+                if filters.search == "" or original_row_text:find(filters.search) then
+                    table.insert(choices, {additional_row})
+                end
             end
+        end
+
+        -- Only apply search filtering to the main row if it doesn't match
+        if filters.search ~= "" and not original_row_text:find(filters.search) then
+            -- Remove the main row if the search doesn't match
+            table.remove(choices)
         end
 
         ::continue::
