@@ -25,24 +25,23 @@ local column_width = {
     Gender = 8,
     Profession = 15,
     Skills = 30,
-    Squad = 15,
-    Race = 10,
+    Squad = 10,
+    Race = 7,
     Type = 10,
     Stress = 10,
 }
 
-local header_position = {
-    ID = 0,
-    Name = 5,
-    Age = 25,
-    Gender = 33,
-    Profession = 41,
-    Skills = 56,
-    Squad = 86,
-    Race = 101,
-    Type = 111,
-    Stress = 121,
-}
+local header_position = {}
+header_position["ID"] = 0
+header_position["Name"] = header_position["ID"] + column_width.ID
+header_position["Age"] = header_position["Name"] + column_width.Name
+header_position["Gender"] = header_position["Age"] + column_width.Age
+header_position["Profession"] = header_position["Gender"] + column_width.Gender
+header_position["Skills"] = header_position["Profession"] + column_width.Profession
+header_position["Squad"] = header_position["Skills"] + column_width.Skills
+header_position["Race"] = header_position["Squad"] + column_width.Squad
+header_position["Type"] = header_position["Race"] + column_width.Race
+header_position["Stress"] = header_position["Type"] + column_width.Type
 
 local current_sort_column = column.ID  -- Default sort column
 local ascending_sort = false  -- Default to descending sort
@@ -230,9 +229,10 @@ function WatchList:init()
                         text = column.Stress,
                         on_click = self:callback('sortByColumn', column.Stress)
                     },
-                    widgets.List{
+                    widgets.FilteredList{
                         view_id = 'list',
-                        frame = {t = 3, b = 0},
+                        frame = {t = 2, b = 0},
+                        row_height=2,
                     },
                 }
             },
