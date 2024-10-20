@@ -24,7 +24,7 @@ local column_width = {
     Age = 8,
     Gender = 8,
     Profession = 15,
-    Skills = 30,
+    Skills = 32,
     Squad = 10,
     Race = 7,
     Type = 10,
@@ -321,12 +321,13 @@ function WatchList:refresh()
 
     -- Rebuild choices for the UI
     local choices = {}
+    local SKILL_THRESHOLD = 30  -- Maximum combined length of two skills
+
     for _, unit_row in ipairs(unit_table) do
         -- Create the main entry for the unit
         local entry = {}
-        
         local skill_list = {}
-        
+
         for i, column_data in ipairs(unit_row) do
             local column_name = field_functions[i].name
             local width = column_width[column_name] or 10
@@ -337,40 +338,52 @@ function WatchList:refresh()
             elseif column_name == "Stress" then
                 color = getStressColor(column_data)
             elseif column_name == "Skills" then
-                for skill in column_data:gmatch("%S+") do  -- Split by spaces
+                -- Split skills by spaces and store them in skill_list
+                for skill in column_data:gmatch("%S+") do
                     table.insert(skill_list, skill)
                 end
+                -- Apply length check for the main row (up to two skills)
                 column_data = popAtIndex(skill_list, 1) or ""
                 if #skill_list > 0 then
-                    column_data = ("%s %s"):format(column_data, popAtIndex(skill_list, 1))
+                    local next_skill = skill_list[1]  -- Peek at the next skill
+                    if (#column_data + #next_skill + 1) <= SKILL_THRESHOLD then
+                        column_data = ("%s %s"):format(column_data, popAtIndex(skill_list, 1))
+                    end
                 end
             end
 
             table.insert(entry, {text = column_data, width = width, pen=color})
         end
+
+        -- Insert the main unit entry (first row)
         table.insert(choices, {text = entry})
 
-        -- Add additional rows for remaining skills, two per row
+        -- Add additional rows for remaining skills, applying the length check
         while #skill_list > 0 do
             local additional_row = {}
-            
+            local skill_data = popAtIndex(skill_list, 1) or ""
+
+            -- Check if we can fit two skills in the row based on the length
+            if #skill_list > 0 then
+                local next_skill = skill_list[1]  -- Peek at the next skill
+                if (#skill_data + #next_skill + 1) <= SKILL_THRESHOLD then
+                    -- Add the next skill if combined length is within the threshold
+                    skill_data = ("%s %s"):format(skill_data, popAtIndex(skill_list, 1))
+                end
+            end
+
             -- Add empty text for all columns except the "Skills" column
             for j = 1, #field_functions do
                 local column_name = field_functions[j].name
                 local width = column_width[column_name] or 10
                 if column_name == "Skills" then
-                    -- Pop up to two skills from the list
-                    local skill_data = popAtIndex(skill_list, 1) or ""
-                    if #skill_list > 0 then
-                        skill_data = ("%s %s"):format(skill_data, popAtIndex(skill_list, 1))
-                    end
                     table.insert(additional_row, {text = skill_data, width = width, pen=COLOR_WHITE})
                 else
                     -- Insert empty text for non-skills columns
                     table.insert(additional_row, {text = "", width = width, pen=COLOR_WHITE})
                 end
             end
-            
+
             -- Insert the additional row into the choices
             table.insert(choices, {text = additional_row})
         end
