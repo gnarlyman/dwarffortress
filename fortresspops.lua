@@ -396,6 +396,7 @@ function WatchList:refresh()
                 if not filters.show_residents and column_data == 'RESIDENT' then
                     goto continue
                 end
+                color = getTypeColor(column_data)
             elseif column_name == column.Squad then
                 if filters.show_squads then
                     if column_data == "No squad" then
@@ -469,6 +470,14 @@ function WatchList:refresh()
 
     -- Update the list view with sorted choices
     self.subviews.list:setChoices(choices)
+end
+
+function getTypeColor(value)
+    if value == 'CITIZEN' then
+        return COLOR_LIGHTGREEN
+    elseif value == 'RESIDENT' then
+        return COLOR_YELLOW
+    end
 end
 
 function getStressColor(value)
