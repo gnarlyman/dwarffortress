@@ -76,15 +76,29 @@ local field_functions = {
     {name = column.Profession, func = function(unit) return df.profession[unit.profession] or "Unknown" end},
     {name = column.Skills, func = function(unit) 
         local skills = {}
+        
+        -- Collect skills and their levels
         for _, skill in ipairs(unit.status.current_soul.skills) do
             local skill_name = df.job_skill[skill.id]
             local skill_level = skill.rating
             if skill_level >= 1 then
-                table.insert(skills, skill_name .. '(' .. skill_level .. ')')
+                table.insert(skills, {name = skill_name, level = skill_level})
             end
         end
-        return table.concat(skills, ' ')
-    end},
+        
+        -- Sort skills by level in descending order
+        table.sort(skills, function(a, b)
+            return a.level > b.level
+        end)
+        
+        -- Create a string with sorted skills
+        local skill_strings = {}
+        for _, skill in ipairs(skills) do
+            table.insert(skill_strings, skill.name .. '(' .. skill.level .. ')')
+        end
+        
+        return table.concat(skill_strings, ' ')
+    end},    
     {name = column.Squad, func = function(unit)
         if unit.military.squad_id ~= -1 then
             local squad = df.squad.find(unit.military.squad_id)
