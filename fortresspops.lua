@@ -248,9 +248,9 @@ function WatchList:sortByColumn(column_name)
     if current_sort_column == column_name then
         ascending_sort = not ascending_sort
     else
-        -- If a new column is selected, reset to descending order
+        -- If a new column is selected, reset to ascending order
         current_sort_column = column_name
-        ascending_sort = false
+        ascending_sort = true
     end
 
     -- Sort the data based on the selected column
