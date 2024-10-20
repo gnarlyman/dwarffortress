@@ -314,7 +314,12 @@ function WatchList:refresh()
     -- Rebuild choices for the UI
     local choices = {}
     for _, unit_row in ipairs(unit_table) do
+        -- Create the main entry for the unit
         local entry = {}
+        
+        -- Create a set to track displayed skills
+        local displayed_skills = {}
+        
         for i, column_data in ipairs(unit_row) do
             local column_name = field_functions[i].name
             local width = column_width[column_name] or 10
@@ -324,16 +329,76 @@ function WatchList:refresh()
                 column_data = string.format("%.2f", column_data)
             elseif column_name == "Stress" then
                 color = getStressColor(column_data)
+            elseif column_name == "Skills" then
+                -- Skills are handled separately, so we won't add them to the entry yet
             end
 
             table.insert(entry, {text = column_data, width = width, pen=color})
         end
-        table.insert(choices, {text = entry})
+        
+        -- Handle the skills for this unit
+        local skills = unit_row[findFieldIndex("Skills")]  -- Get skills column data
+        if skills then
+            local skill_list = {}  -- Split skills into a table
+            for skill in skills:gmatch("%S+") do  -- Split by spaces
+                table.insert(skill_list, skill)
+            end
+            
+            -- Add up to two unique skills to the main entry
+            local main_skills = {}
+            for _, skill in ipairs(skill_list) do
+                if #main_skills < 2 and not displayed_skills[skill] then
+                    table.insert(main_skills, skill)
+                    displayed_skills[skill] = true
+                end
+            end
+            
+            -- Add the main skills to the entry (up to two)
+            for _, skill in ipairs(main_skills) do
+                table.insert(entry, {text = skill, width = column_width["Skills"], pen=COLOR_WHITE})
+            end
+            
+            table.insert(choices, {text = entry})  -- Add the main unit entry
+            
+            -- Now add remaining skills to choices, two per row
+            for i = 1, #skill_list do
+                local skill = skill_list[i]
+                if not displayed_skills[skill] then
+                    local skill_entry = {}
+                    for j = 1, #field_functions do
+                        local column_name = field_functions[j].name
+                        local width = column_width[column_name] or 10
+                        local color = COLOR_WHITE
+
+                        if column_name == "Skills" then
+                            table.insert(skill_entry, {text = skill, width = width, pen=color})
+                        else
+                            table.insert(skill_entry, {text = "", width = width, pen=color})
+                        end
+                    end
+                    table.insert(choices, {text = skill_entry})  -- Add the skill row to choices
+                    displayed_skills[skill] = true  -- Mark this skill as displayed
+                end
+            end
+        else
+            table.insert(choices, {text = entry})  -- Add the main unit entry if no skills
+        end
     end
 
     -- Update the list view with sorted choices
     self.subviews.list:setChoices(choices)
 end
+
+-- Helper function to find the index of a specific field
+function findFieldIndex(field_name)
+    for i, field in ipairs(field_functions) do
+        if field.name == field_name then
+            return i
+        end
+    end
+    return nil
+end
+
 
 function getStressColor(value)
     if value == 6 then
