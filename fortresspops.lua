@@ -355,17 +355,6 @@ function WatchList:refresh()
     self.subviews.list:setChoices(choices)
 end
 
--- Helper function to find the index of a specific field
-function findFieldIndex(field_name)
-    for i, field in ipairs(field_functions) do
-        if field.name == field_name then
-            return i
-        end
-    end
-    return nil
-end
-
-
 function getStressColor(value)
     if value == 6 then
         return COLOR_LIGHTGREEN
