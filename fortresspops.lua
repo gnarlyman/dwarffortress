@@ -349,6 +349,31 @@ function WatchList:refresh()
             table.insert(entry, {text = column_data, width = width, pen=color})
         end
         table.insert(choices, {text = entry})
+
+        -- Add additional rows for remaining skills, two per row
+        while #skill_list > 0 do
+            local additional_row = {}
+            
+            -- Add empty text for all columns except the "Skills" column
+            for j = 1, #field_functions do
+                local column_name = field_functions[j].name
+                local width = column_width[column_name] or 10
+                if column_name == "Skills" then
+                    -- Pop up to two skills from the list
+                    local skill_data = popAtIndex(skill_list, 1) or ""
+                    if #skill_list > 0 then
+                        skill_data = ("%s %s"):format(skill_data, popAtIndex(skill_list, 1))
+                    end
+                    table.insert(additional_row, {text = skill_data, width = width, pen=COLOR_WHITE})
+                else
+                    -- Insert empty text for non-skills columns
+                    table.insert(additional_row, {text = "", width = width, pen=COLOR_WHITE})
+                end
+            end
+            
+            -- Insert the additional row into the choices
+            table.insert(choices, {text = additional_row})
+        end
     end
 
     -- Update the list view with sorted choices
